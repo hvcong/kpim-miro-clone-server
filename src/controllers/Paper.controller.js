@@ -8,6 +8,7 @@ const {
   ChangeLog,
 } = require('../configs/persist');
 const { PAPER_USER_ROLE } = require('../models/Paper_User.model');
+const { PaperServices } = require('../models/Paper.model');
 
 const PaperController = {
   add: async (req, res) => {
@@ -49,16 +50,7 @@ const PaperController = {
     const userId = req.body.userId;
 
     try {
-      const list = await Paper.findAndCountAll({
-        include: [
-          {
-            model: Paper_User,
-            where: {
-              UserId: userId,
-            },
-          },
-        ],
-      });
+      const list = await PaperServices.getList(userId);
 
       return res.status(200).json({
         isSuccess: true,

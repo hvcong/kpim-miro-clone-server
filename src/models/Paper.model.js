@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../configs/database');
+const { Paper_User } = require('./Paper_User.model');
 
 const Paper = sequelize.define(
   'Paper',
@@ -24,4 +25,26 @@ const Paper = sequelize.define(
   { timestamps: true },
 );
 
-module.exports = Paper;
+const PaperServices = {
+  getList: async (userId) => {
+    let list;
+    try {
+      list = await Paper.findAndCountAll({
+        include: [
+          {
+            model: Paper_User,
+            where: {
+              UserId: userId,
+            },
+          },
+        ],
+      });
+    } catch (error) {
+      console.log(error);
+    }
+
+    return list;
+  },
+};
+
+module.exports = { Paper, PaperServices };

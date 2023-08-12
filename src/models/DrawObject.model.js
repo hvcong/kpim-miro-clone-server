@@ -1,7 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../configs/database');
 const { ChangeLog, CHANGE_LOG_TYPE } = require('./ChangeLog.model');
-const Paper = require('./Paper.model');
+const { Paper } = require('./Paper.model');
 const User = require('./User.model');
 
 const DrawnObject = sequelize.define(

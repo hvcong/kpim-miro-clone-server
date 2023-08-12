@@ -1,7 +1,7 @@
 const sequelize = require('./database');
 const { DrawnObject } = require('../models/DrawObject.model');
 const Message = require('../models/Message.model');
-const Paper = require('../models/Paper.model');
+const { Paper } = require('../models/Paper.model');
 const { Paper_User } = require('../models/Paper_User.model');
 const User = require('../models/User.model');
 const { ChangeLog } = require('../models/ChangeLog.model');
