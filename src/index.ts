@@ -1,3 +1,6 @@
+import { Socket } from 'socket.io';
+import { verifySocketConnection } from './utils/verify';
+
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
@@ -9,6 +12,7 @@ const { Server } = require('socket.io');
 const drawnHandler = require('./socketio/drawnHandler');
 const { validateToken } = require('./utils/verify');
 const paperHandle = require('./socketio/paperHandle');
+const templateHandler = require('./socketio/templateHandler');
 require('./configs/persist');
 
 const app = express();
@@ -19,23 +23,12 @@ const io = new Server(httpServer, {
   },
 });
 
-io.use(async (socket, next) => {
-  const token = socket.handshake.auth.token.split(' ')[1];
-  const paperId = socket.handshake.auth.paperId;
+io.use(verifySocketConnection);
 
-  let decode = await validateToken(token);
-
-  if (!decode) {
-    return next(new Error('Invalid token'));
-  }
-  socket.userId = decode.id;
-  socket.paperId = paperId;
-  next();
-});
-
-io.on('connection', (socket) => {
+io.on('connection', (socket: Socket) => {
   paperHandle(io, socket);
   drawnHandler(io, socket);
+  templateHandler(io, socket);
 });
 
 app.use(bodyParser.json());

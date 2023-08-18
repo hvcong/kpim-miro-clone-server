@@ -34,7 +34,23 @@ async function validateToken(token) {
   return decoded;
 }
 
+async function verifySocketConnection(socket, next) {
+  const token = socket.handshake.auth.token.split(' ')[1];
+  const paperId = socket.handshake.auth.paperId;
+
+  let decode = await validateToken(token);
+
+  if (!decode) {
+    return next(new Error('Invalid token'));
+  }
+
+  socket.userId = decode.id;
+  socket.paperId = paperId;
+  next();
+}
+
 module.exports = {
   verifyRequestToken,
   validateToken,
+  verifySocketConnection,
 };

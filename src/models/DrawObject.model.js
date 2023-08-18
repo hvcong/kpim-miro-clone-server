@@ -1,8 +1,11 @@
+import { Sequelize } from 'sequelize';
+import { CanvasObject } from '../utils/types';
+
 const { DataTypes } = require('sequelize');
 const sequelize = require('../configs/database');
 const { ChangeLog, CHANGE_LOG_TYPE } = require('./ChangeLog.model');
 const { Paper } = require('./Paper.model');
-const User = require('./User.model');
+const { User } = require('./User.model');
 
 const DrawnObject = sequelize.define(
   'DrawnObject',
@@ -28,11 +31,15 @@ const DrawnObject = sequelize.define(
 const DrawnObjServices = {
   addOne: async ({ userId, paperId, data }) => {
     const t = await sequelize.transaction();
+    const id = data.value.id;
+    console.log(id);
+    data.value.fromEmit = false;
     const value = JSON.stringify(data.value);
     try {
       const newDrawnObj = await DrawnObject.create(
         {
-          value: value,
+          value,
+          id,
         },
         {
           transaction: t,
@@ -81,7 +88,7 @@ const DrawnObjServices = {
         transaction: t,
       });
       await t.commit();
-      return newDrawnObj;
+      return newDrawnObj.toJSON();
     } catch (err) {
       console.log('add drawnObj err', err);
       await t.rollback();
@@ -108,7 +115,9 @@ const DrawnObjServices = {
 
       if (!changeLog) throw new Error('ChangeLog not exists');
 
-      drawnObj.value = data.value;
+      if (data) {
+        drawnObj.value = JSON.stringify(data.value);
+      }
       changeLog.type = updateType?.toUpperCase();
       await changeLog.setUser(user);
 
@@ -133,7 +142,7 @@ const DrawnObjServices = {
       await t.commit();
       return drawnObj;
     } catch (error) {
-      console.log('update drawnObj err', error);
+      console.log(error);
       await t.rollback();
       return null;
     }
@@ -159,3 +168,4 @@ const DrawnObjServices = {
 };
 
 module.exports = { DrawnObject, DrawnObjServices };
+export { DrawnObject, DrawnObjServices };

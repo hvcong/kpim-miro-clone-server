@@ -1,5 +1,7 @@
+import { Sequelize } from 'sequelize';
+
 const { DataTypes } = require('sequelize');
-const sequelize = require('../configs/database');
+const sequelize: Sequelize = require('../configs/database');
 
 const Message = sequelize.define(
   'Message',
@@ -23,4 +25,6 @@ const Message = sequelize.define(
   },
 );
 
-module.exports = Message;
+module.exports = { Message };
+
+export { Message };

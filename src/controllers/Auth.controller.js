@@ -1,6 +1,6 @@
 require('dotenv').config();
 const { UUIDV4, UUID } = require('sequelize');
-const User = require('../models/User.model');
+const { User } = require('../models/User.model');
 const argon2 = require('argon2');
 const jwt = require('jsonwebtoken');
 

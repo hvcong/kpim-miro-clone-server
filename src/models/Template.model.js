@@ -1,14 +1,13 @@
 import { randomUUID } from 'crypto';
-import { DrawnObject } from './DrawObject.model';
 import { User } from './User.model';
+import { DrawnObject } from './DrawObject.model';
 import { CHANGE_LOG_TYPE, ChangeLog } from './ChangeLog.model';
 
 const { DataTypes } = require('sequelize');
 const sequelize = require('../configs/database');
-const { Paper_User, PAPER_USER_ROLE } = require('./Paper_User.model');
 
-const Paper = sequelize.define(
-  'Paper',
+const Template = sequelize.define(
+  'Template',
   {
     id: {
       type: DataTypes.UUID,
@@ -17,54 +16,42 @@ const Paper = sequelize.define(
     },
     name: {
       type: DataTypes.STRING,
-      defaultValue: 'default',
+      defaultValue: 'template_name',
     },
-
-    value: {
-      type: DataTypes.TEXT,
+    shareState: {
+      type: DataTypes.STRING,
+      defaultValue: 'private',
+    },
+    category: {
+      type: DataTypes.STRING,
+      defaultValue: 'default',
     },
   },
   { timestamps: true },
 );
 
-const PaperServices = {
-  getList: async (userId) => {
-    let list;
-    try {
-      list = await Paper.findAndCountAll({
-        include: [
-          {
-            model: Paper_User,
-            where: {
-              UserId: userId,
-            },
+const TemplateServices = {
+  getListByUserId: async (userId) => {
+    const list = await Template.findAll({
+      where: {
+        UserId: userId,
+      },
+      include: [
+        {
+          model: User,
+          attributes: {
+            exclude: ['password'],
           },
-        ],
-      });
-    } catch (error) {
-      console.log(error);
-    }
+        },
+      ],
+    });
 
     return list;
   },
-  updateName: async (paperId, newName) => {
-    console.log(newName);
-    try {
-      let paper = await Paper.findByPk(paperId);
-      if (!paper) throw new Error('paperId invalid');
 
-      paper.name = newName;
+  createTemplate: async (userId, data) => {
+    const { list = [], name = 'template_name' } = data;
 
-      paper = await paper.save();
-      return paper;
-    } catch (error) {
-      console.log('update papername error:', error);
-      return null;
-    }
-  },
-
-  saveAsTemplate: async (userId, data) => {
-    let list = data.list || [];
     const t = await sequelize.transaction();
     try {
       const user = await User.findByPk(userId, {
@@ -72,19 +59,16 @@ const PaperServices = {
       });
       if (!user) throw new Error('User not found!');
 
-      let paper = await Paper.create(
+      let template = await Template.create(
         {
-          isTemplate: true,
-          name: data.paperName || 'template',
+          name,
         },
         {
           transaction: t,
         },
       );
-      await paper.addUser(user, {
-        through: {
-          role: PAPER_USER_ROLE.ADMIN,
-        },
+
+      await template.setUser(user, {
         transaction: t,
       });
 
@@ -102,7 +86,7 @@ const PaperServices = {
           },
         );
 
-        await newDrawnObj.setPaper(paper, {
+        await newDrawnObj.setTemplate(template, {
           transaction: t,
         });
 
@@ -124,19 +108,26 @@ const PaperServices = {
         });
       }
 
-      paper = await paper.reload({
+      template = await template.reload({
+        include: [
+          {
+            model: User,
+            attributes: {
+              exclude: ['password'],
+            },
+          },
+        ],
         transaction: t,
       });
       await t.commit();
-      return paper.toJSON();
+      return template.toJSON();
     } catch (error) {
-      console.log(error);
       t.rollback();
-      return null;
+      throw new Error(error.toString());
     }
   },
 };
 
-module.exports = { Paper, PaperServices };
+module.exports = { Template, TemplateServices };
 
-export { Paper, PaperServices };
+export { Template, TemplateServices };

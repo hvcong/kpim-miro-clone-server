@@ -32,3 +32,5 @@ const ChangeLog = sequelize.define(
 );
 
 module.exports = { ChangeLog, CHANGE_LOG_TYPE };
+
+export { ChangeLog, CHANGE_LOG_TYPE };

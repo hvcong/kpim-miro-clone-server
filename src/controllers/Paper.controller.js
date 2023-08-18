@@ -1,18 +1,13 @@
 const { Op } = require('sequelize');
 
-const {
-  Paper,
-  User,
-  Paper_User,
-  DrawnObject,
-  ChangeLog,
-} = require('../configs/persist');
-const { PAPER_USER_ROLE } = require('../models/Paper_User.model');
-const { PaperServices } = require('../models/Paper.model');
+const { PAPER_USER_ROLE, Paper_User } = require('../models/Paper_User.model');
+const { PaperServices, Paper } = require('../models/Paper.model');
+const { User } = require('../models/User.model');
+const { DrawnObject } = require('../models/DrawObject.model');
 
 const PaperController = {
   add: async (req, res) => {
-    const { userId, isTemplate = false } = req.body;
+    const { userId } = req.body;
 
     try {
       const user = await User.findByPk(userId);
@@ -23,9 +18,7 @@ const PaperController = {
         });
       }
 
-      const newPaper = await Paper.create({
-        isTemplate,
-      });
+      const newPaper = await Paper.create();
 
       await newPaper.setUsers(user, {
         through: {
@@ -33,7 +26,7 @@ const PaperController = {
         },
       });
 
-      newPaper.save();
+      await newPaper.save();
 
       return res.status(200).json({
         isSuccess: true,
@@ -125,6 +118,25 @@ const PaperController = {
       return res.status(500).json({
         isSuccess: false,
         message: error?.toString(),
+      });
+    }
+  },
+  saveAsTemplate: async (req, res) => {
+    const { userId, ...data } = req.body;
+
+    try {
+      const template = await PaperServices.saveAsTemplate(userId, data);
+      if (!template) throw new Error('Save as template error');
+
+      return res.status(200).json({
+        isSuccess: true,
+        template,
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({
+        isSuccess: false,
+        message: 'Save as template error',
       });
     }
   },
