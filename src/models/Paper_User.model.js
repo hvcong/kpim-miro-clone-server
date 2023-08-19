@@ -4,7 +4,7 @@ import { User } from './User.model';
 const { DataTypes } = require('sequelize');
 const sequelize = require('../configs/database');
 
-const PAPER_USER_ROLE = {
+export const PAPER_USER_ROLE = {
   EDIT: 'EDIT',
   READ: 'READ',
   COMMENT: 'COMMENT',
@@ -39,4 +39,4 @@ module.exports = {
   Paper_UserServices,
 };
 
-export { Paper_UserServices, PAPER_USER_ROLE };
+export { Paper_UserServices, PAPER_USER_ROLE, Paper_User };

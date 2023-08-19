@@ -14,6 +14,9 @@ const Template = sequelize.define(
       primaryKey: true,
       defaultValue: DataTypes.UUIDV4,
     },
+    description: {
+      type: DataTypes.STRING,
+    },
     name: {
       type: DataTypes.STRING,
       defaultValue: 'template_name',
@@ -50,7 +53,7 @@ const TemplateServices = {
   },
 
   createTemplate: async (userId, data) => {
-    const { list = [], name = 'template_name' } = data;
+    const { list = [], name = 'template_name', description = '' } = data;
 
     const t = await sequelize.transaction();
     try {
@@ -62,6 +65,7 @@ const TemplateServices = {
       let template = await Template.create(
         {
           name,
+          description,
         },
         {
           transaction: t,
@@ -125,6 +129,22 @@ const TemplateServices = {
       t.rollback();
       throw new Error(error.toString());
     }
+  },
+  getById: async (id) => {
+    let tmp = await Template.findByPk(id, {
+      include: [
+        {
+          model: User,
+          attributes: {
+            exclude: ['password'],
+          },
+        },
+        {
+          model: DrawnObject,
+        },
+      ],
+    });
+    return tmp;
   },
 };
 

@@ -6,6 +6,12 @@ import { CHANGE_LOG_TYPE, ChangeLog } from './ChangeLog.model';
 const { DataTypes } = require('sequelize');
 const sequelize = require('../configs/database');
 const { Paper_User, PAPER_USER_ROLE } = require('./Paper_User.model');
+const LINK_PERMISSION = {
+  CAN_EDIT: 'CAN_EDIT',
+  CAN_VIEW: 'CAN_VIEW',
+  CAN_COMMENT: 'CAN_COMMENT',
+  NO_ACCESS: 'NO_ACCESS',
+};
 
 const Paper = sequelize.define(
   'Paper',
@@ -19,7 +25,15 @@ const Paper = sequelize.define(
       type: DataTypes.STRING,
       defaultValue: 'default',
     },
-
+    description: {
+      type: DataTypes.STRING,
+    },
+    linkPermission: {
+      type: DataTypes.ENUM,
+      values: Object.keys(LINK_PERMISSION),
+      allowNull: false,
+      defaultValue: LINK_PERMISSION.NO_ACCESS,
+    },
     value: {
       type: DataTypes.TEXT,
     },
@@ -139,4 +153,4 @@ const PaperServices = {
 
 module.exports = { Paper, PaperServices };
 
-export { Paper, PaperServices };
+export { Paper, PaperServices, LINK_PERMISSION };

@@ -165,6 +165,70 @@ const DrawnObjServices = {
       return null;
     }
   },
+  addOne2: async ({ userId, paperId, data }, transaction) => {
+    const id = data.value.id;
+
+    data.value.fromEmit = false;
+    const value = JSON.stringify(data.value);
+    try {
+      const newDrawnObj = await DrawnObject.create(
+        {
+          value,
+          id,
+        },
+        {
+          transaction,
+        },
+      );
+      const user = await User.findByPk(userId, {
+        transaction,
+      });
+      if (!user) throw new Error('UserId id not valid');
+
+      const paper = await Paper.findByPk(paperId, { transaction });
+      if (!paper) throw new Error('PaperId id not valid');
+      await newDrawnObj.setPaper(paper, {
+        transaction,
+      });
+
+      const log = await ChangeLog.create(
+        {
+          type: CHANGE_LOG_TYPE.ADD,
+        },
+        {
+          transaction,
+        },
+      );
+
+      await log.setUser(user, {
+        transaction,
+      });
+
+      await newDrawnObj.setChangeLog(log, {
+        transaction,
+      });
+
+      await newDrawnObj.reload({
+        include: [
+          {
+            model: ChangeLog,
+            include: [
+              {
+                model: User,
+                attributes: ['id', 'username'],
+              },
+            ],
+          },
+        ],
+        transaction,
+      });
+      return newDrawnObj.toJSON();
+    } catch (err) {
+      console.log('add drawnObj err', err);
+      t.rollback();
+      throw err;
+    }
+  },
 };
 
 module.exports = { DrawnObject, DrawnObjServices };

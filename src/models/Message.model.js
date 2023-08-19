@@ -1,7 +1,14 @@
 import { Sequelize } from 'sequelize';
 
 const { DataTypes } = require('sequelize');
-const sequelize: Sequelize = require('../configs/database');
+const sequelize = require('../configs/database');
+
+const LINK_PERMISSION = {
+  CAN_EDIT: 'CAN_EDIT',
+  CAN_VIEW: 'CAN_VIEW',
+  CAN_COMMENT: 'CAN_COMMENT',
+  NO_ACCESS: 'NO_ACCESS',
+};
 
 const Message = sequelize.define(
   'Message',
@@ -12,11 +19,13 @@ const Message = sequelize.define(
     },
     type: {
       type: DataTypes.ENUM,
-      values: ['invite', 'request'],
+      values: ['INVITE', 'REQUEST'],
+      allowNull: false,
     },
     role: {
       type: DataTypes.ENUM,
-      values: ['edit', 'read', 'comment', 'admin', 'noAccess'],
+      values: Object.keys(LINK_PERMISSION),
+      allowNull: false,
     },
   },
   {

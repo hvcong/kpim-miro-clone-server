@@ -36,6 +36,24 @@ const TemplateController = {
       });
     }
   },
+  async getById(req, res) {
+    const tmpId = req.params.templateId;
+
+    try {
+      const tmp = await TemplateServices.getById(tmpId);
+
+      if (!tmp) throw new Error('Template not found');
+      return res.status(200).json({
+        isSuccess: true,
+        template: tmp,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        isSuccess: false,
+        message: error.toString(),
+      });
+    }
+  },
 };
 
 module.exports = TemplateController;

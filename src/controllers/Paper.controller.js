@@ -3,36 +3,82 @@ const { Op } = require('sequelize');
 const { PAPER_USER_ROLE, Paper_User } = require('../models/Paper_User.model');
 const { PaperServices, Paper } = require('../models/Paper.model');
 const { User } = require('../models/User.model');
-const { DrawnObject } = require('../models/DrawObject.model');
+const { DrawnObject, DrawnObjServices } = require('../models/DrawObject.model');
+const sequelize = require('../configs/database');
+const { randomUUID } = require('crypto');
 
 const PaperController = {
   add: async (req, res) => {
-    const { userId } = req.body;
+    const { userId, templateId } = req.body;
+
+    const t = await sequelize.transaction();
+    console.log(templateId);
 
     try {
-      const user = await User.findByPk(userId);
+      const user = await User.findByPk(userId, { transaction: t });
       if (!user) {
+        t.rollback();
         return res.status(405).json({
           isSuccess: false,
           message: 'User not valid',
         });
       }
 
-      const newPaper = await Paper.create();
+      const newPaper = await Paper.create(
+        {},
+        {
+          transaction: t,
+        },
+      );
 
       await newPaper.setUsers(user, {
         through: {
           role: PAPER_USER_ROLE.ADMIN,
         },
+        transaction: t,
       });
 
-      await newPaper.save();
+      await newPaper.save({
+        transaction: t,
+      });
+
+      if (templateId) {
+        let drawnObjList = await DrawnObject.findAll({
+          where: {
+            TemplateId: templateId,
+          },
+          attributes: ['value'],
+          transaction: t,
+        });
+
+        if (drawnObjList) {
+          for (let i = 0; i < drawnObjList.length; i++) {
+            let item = drawnObjList[i].toJSON();
+            let canvasObj = JSON.parse(item.value);
+            canvasObj.id = randomUUID();
+
+            let obj = await DrawnObjServices.addOne2(
+              {
+                userId,
+                paperId: newPaper.id,
+                data: {
+                  value: canvasObj,
+                },
+              },
+              t,
+            );
+          }
+        }
+      }
+
+      t.commit();
 
       return res.status(200).json({
         isSuccess: true,
         newPaper,
       });
     } catch (error) {
+      t.rollback();
       return res.status(500).json({
         isSuccess: false,
         message: 'Lỗi hệ thống!',

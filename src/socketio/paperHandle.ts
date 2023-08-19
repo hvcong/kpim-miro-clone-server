@@ -71,18 +71,24 @@ module.exports = async (io: Server, socket: Socket & { paperId: string; userId: 
       room = [];
       rooms.set(paperId, room);
     }
-    const member = await Paper_UserServices.getMember(userId, paperId);
+    const member: any = await Paper_UserServices.getMember(userId, paperId);
+
+    room = room.filter((_member) => {
+      return _member.id != member.id;
+    });
+
     room.push(member?.toJSON());
+    rooms.set(paperId, room);
     socket.emit('sv:paper:list_member', Array.from(room));
     socket.to(paperId).emit('sv:member:open_paper', member);
   }
   async function on_disconnecting() {
-    const room: any[] = rooms.get(paperId);
+    const room: any[] = rooms.get(paperId) || [];
 
     let index = room.findIndex((item) => {
+      console.log(item);
       return item.User.id === userId;
     });
-
     room.splice(index, 1);
 
     socket.to(paperId).emit('sv:member:close_paper', userId);
