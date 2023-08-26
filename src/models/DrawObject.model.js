@@ -29,10 +29,10 @@ const DrawnObject = sequelize.define(
 );
 
 const DrawnObjServices = {
-  addOne: async ({ userId, paperId, data }) => {
+  async addOne({ userId, paperId, data }) {
     const t = await sequelize.transaction();
     const id = data.value.id;
-    console.log(id);
+    console.log('add one:', id);
     data.value.fromEmit = false;
     const value = JSON.stringify(data.value);
     try {
@@ -96,7 +96,7 @@ const DrawnObjServices = {
     }
   },
 
-  updateOne: async ({ data, drawnObjId, userId, updateType }) => {
+  async updateOne({ data, drawnObjId, userId, updateType }) {
     const t = await sequelize.transaction();
 
     try {
@@ -147,7 +147,148 @@ const DrawnObjServices = {
       return null;
     }
   },
-  getAllByPaperId: async (paperId) => {
+  async removeMany({ drawnObjIdList, userId }, transaction) {
+    let user = await User.findByPk(userId, { transaction });
+    if (!user) throw new Error('User not found');
+
+    let changeLogList = await ChangeLog.findAll({
+      where: {
+        DrawnObjectId: drawnObjIdList,
+      },
+      transaction,
+    });
+
+    for (let i = 0; i < changeLogList.length; i++) {
+      await changeLogList[i].setUser(user, {
+        transaction,
+      });
+
+      changeLogList[i].type = CHANGE_LOG_TYPE.DELETE;
+      await changeLogList[i].save({
+        transaction,
+      });
+    }
+
+    return true;
+  },
+  async reAddMany({ drawnObjIdList, userId }, transaction) {
+    let user = await User.findByPk(userId, { transaction });
+    if (!user) throw new Error('User not found');
+
+    let changeLogList = await ChangeLog.findAll({
+      where: {
+        DrawnObjectId: drawnObjIdList,
+      },
+      transaction,
+    });
+
+    for (let i = 0; i < changeLogList.length; i++) {
+      await changeLogList[i].setUser(user, {
+        transaction,
+      });
+
+      changeLogList[i].type = CHANGE_LOG_TYPE.ADD;
+      await changeLogList[i].save({
+        transaction,
+      });
+    }
+
+    return true;
+  },
+  async updateMany({ canvasObjList, userId }, transaction) {
+    try {
+      let user = await User.findByPk(userId, { transaction });
+      if (!user) throw new Error('User not found!');
+
+      let drawnList = await DrawnObject.findAll({
+        where: {
+          id: canvasObjList.map((item) => item.id),
+        },
+        transaction,
+      });
+
+      for (let i = 0; i < drawnList.length; i++) {
+        let drawnObj = drawnList[i];
+
+        const changeLog = await drawnObj.getChangeLog({
+          transaction,
+        });
+
+        if (!changeLog) throw new Error('ChangeLog not exists');
+
+        let canvasObj = canvasObjList.filter((item) => item.id === drawnObj.id)[0];
+        if (!canvasObj) throw new Error('Canvas obj not exist in db');
+
+        drawnObj.value = JSON.stringify(canvasObj);
+
+        changeLog.type = CHANGE_LOG_TYPE.UPDATE;
+        await changeLog.setUser(user);
+
+        await drawnObj.save({
+          transaction,
+        });
+
+        await changeLog.save({
+          transaction,
+        });
+      }
+
+      return true;
+    } catch (error) {
+      console.log(error);
+      throw new Error(error.toString());
+    }
+  },
+  async updateOne2({ data, drawnObjId, userId, updateType }, transaction) {
+    try {
+      const drawnObj = await DrawnObject.findByPk(drawnObjId, {
+        transaction,
+      });
+
+      if (!drawnObj) throw new Error('DrawnObjId not valid');
+
+      const changeLog = await drawnObj.getChangeLog({
+        transaction,
+      });
+
+      const user = await User.findByPk(userId);
+      if (!user) throw new Error('Userid not valid');
+
+      if (!changeLog) throw new Error('ChangeLog not exists');
+
+      if (data) {
+        drawnObj.value = JSON.stringify(data.value);
+      }
+      changeLog.type = updateType?.toUpperCase();
+      await changeLog.setUser(user);
+
+      await drawnObj.save({
+        transaction,
+      });
+
+      await changeLog.save({
+        transaction,
+      });
+
+      await drawnObj.reload({
+        include: [
+          {
+            model: ChangeLog,
+            include: [{ model: User, attributes: ['id', 'username'] }],
+          },
+        ],
+        transaction,
+      });
+
+      await t.commit();
+      return drawnObj;
+    } catch (error) {
+      console.log(error);
+      await t.rollback();
+      return null;
+    }
+  },
+  async getAllByPaperId(paperId) {
     try {
       let list = await DrawnObject.findAll({
         where: {
@@ -165,7 +306,7 @@ const DrawnObjServices = {
       return null;
     }
   },
-  addOne2: async ({ userId, paperId, data }, transaction) => {
+  async addOne2({ userId, paperId, data }, transaction) {
     const id = data.value.id;
 
     data.value.fromEmit = false;

@@ -74,20 +74,19 @@ module.exports = async (io: Server, socket: Socket & { paperId: string; userId: 
     const member: any = await Paper_UserServices.getMember(userId, paperId);
 
     room = room.filter((_member) => {
-      return _member.id != member.id;
+      return _member.UserId != member.UserId;
     });
-
     room.push(member?.toJSON());
     rooms.set(paperId, room);
     socket.emit('sv:paper:list_member', Array.from(room));
     socket.to(paperId).emit('sv:member:open_paper', member);
   }
   async function on_disconnecting() {
+    console.log('disconnect', userId);
     const room: any[] = rooms.get(paperId) || [];
 
-    let index = room.findIndex((item) => {
-      console.log(item);
-      return item.User.id === userId;
+    let index = room.findIndex((member) => {
+      return member.User.id === userId;
     });
     room.splice(index, 1);
 

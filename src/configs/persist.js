@@ -37,7 +37,7 @@ User.hasMany(Template);
 
 sequelize
   .sync({
-    force: true,
+    // force: true,
   })
   .then((result) => {
     console.log('connect db oke');
